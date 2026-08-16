@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { TransactionForm } from '@/components/transaction-form';
 import { ApiError, apiFetch } from '@/lib/api';
@@ -14,18 +14,33 @@ import {
 import { useAuthGuard } from '@/lib/use-auth-guard';
 
 type Filter = 'ALL' | TransactionType;
+const TRANSACTIONS_PER_PAGE = 5;
+
+function paginationPages(currentPage: number, totalPages: number) {
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+  return [...pages].filter((page) => page >= 1 && page <= totalPages).sort((a, b) => a - b);
+}
 
 export default function TransactionsPage() {
   const { user, checking } = useAuthGuard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState<Filter>('ALL');
   const [month, setMonth] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [undoItem, setUndoItem] = useState<Transaction | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const historyScrollRef = useRef<HTMLDivElement>(null);
+  const totalPages = Math.max(1, Math.ceil(transactions.length / TRANSACTIONS_PER_PAGE));
+  const pageStart = (page - 1) * TRANSACTIONS_PER_PAGE;
+  const visibleTransactions = useMemo(
+    () => transactions.slice(pageStart, pageStart + TRANSACTIONS_PER_PAGE),
+    [pageStart, transactions],
+  );
+  const visiblePages = useMemo(() => paginationPages(page, totalPages), [page, totalPages]);
 
   const loadTransactions = useCallback(async () => {
     setLoading(true);
@@ -50,6 +65,15 @@ export default function TransactionsPage() {
     if (undoTimer.current) clearTimeout(undoTimer.current);
   }, []);
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  function goToPage(nextPage: number) {
+    setPage(Math.min(Math.max(nextPage, 1), totalPages));
+    historyScrollRef.current?.scrollTo({ top: 0 });
+  }
+
   async function removeTransaction(transaction: Transaction) {
     setTransactions((current) => current.filter((item) => item.id !== transaction.id));
     setUndoItem(transaction);
@@ -69,7 +93,6 @@ export default function TransactionsPage() {
     const payload: TransactionInput = {
       type: undoItem.type,
       amount: Number(undoItem.amount),
-      category: undoItem.category,
       description: undoItem.description,
       transactionDate: undoItem.transactionDate.slice(0, 10),
     };
@@ -111,7 +134,7 @@ export default function TransactionsPage() {
                 key={value}
                 type="button"
                 aria-pressed={filter === value}
-                onClick={() => setFilter(value)}
+                onClick={() => { setFilter(value); setPage(1); }}
               >
                 {label}
               </button>
@@ -119,7 +142,11 @@ export default function TransactionsPage() {
           </div>
           <label className="month-filter">
             <span>Bulan</span>
-            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
+            <input
+              type="month"
+              value={month}
+              onChange={(event) => { setMonth(event.target.value); setPage(1); }}
+            />
           </label>
         </section>
 
@@ -137,24 +164,28 @@ export default function TransactionsPage() {
               <button className="button button--secondary" type="button" onClick={openCreate}>Catat sekarang</button>
             </div>
           ) : (
-            <div className="history-table-wrap">
+            <>
+            <div
+              className="history-table-wrap"
+              ref={historyScrollRef}
+              tabIndex={0}
+              aria-label="Daftar transaksi, dapat digulir"
+            >
               <table className="history-table">
                 <thead>
                   <tr>
                     <th>Tanggal</th>
                     <th>Keterangan</th>
-                    <th>Kategori</th>
                     <th>Jenis</th>
                     <th>Nominal</th>
                     <th><span className="visually-hidden">Aksi</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((transaction) => (
+                  {visibleTransactions.map((transaction) => (
                     <tr key={transaction.id}>
                       <td data-label="Tanggal">{formatDate(transaction.transactionDate)}</td>
                       <td data-label="Keterangan"><strong>{transaction.description}</strong></td>
-                      <td data-label="Kategori">{transaction.category}</td>
                       <td data-label="Jenis">
                         <span className={`type-mark type-mark--${transaction.type.toLowerCase()}`}>
                           {transaction.type === 'INCOME' ? '＋ Pemasukan' : '− Pengeluaran'}
@@ -172,6 +203,36 @@ export default function TransactionsPage() {
                 </tbody>
               </table>
             </div>
+            <nav className="pagination" aria-label="Navigasi halaman riwayat transaksi">
+              <p>
+                Menampilkan {pageStart + 1}–{Math.min(pageStart + TRANSACTIONS_PER_PAGE, transactions.length)} dari{' '}
+                {transactions.length} transaksi
+              </p>
+              <div className="pagination__controls">
+                <button type="button" onClick={() => goToPage(page - 1)} disabled={page === 1}>
+                  ← Sebelumnya
+                </button>
+                {visiblePages.map((pageNumber, index) => (
+                  <span className="pagination__page" key={pageNumber}>
+                    {index > 0 && pageNumber - visiblePages[index - 1] > 1 && (
+                      <span className="pagination__ellipsis" aria-hidden="true">…</span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Buka halaman ${pageNumber}`}
+                      aria-current={page === pageNumber ? 'page' : undefined}
+                      onClick={() => goToPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  </span>
+                ))}
+                <button type="button" onClick={() => goToPage(page + 1)} disabled={page === totalPages}>
+                  Berikutnya →
+                </button>
+              </div>
+            </nav>
+            </>
           )}
         </section>
       </main>

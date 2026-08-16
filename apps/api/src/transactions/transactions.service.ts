@@ -34,7 +34,6 @@ export class TransactionsService {
         userId,
         type: dto.type,
         amount: new Prisma.Decimal(dto.amount),
-        category: dto.category.trim(),
         description: dto.description.trim(),
         transactionDate: this.toDate(dto.transactionDate),
       },
@@ -48,7 +47,6 @@ export class TransactionsService {
       data: {
         ...(dto.type ? { type: dto.type } : {}),
         ...(dto.amount !== undefined ? { amount: new Prisma.Decimal(dto.amount) } : {}),
-        ...(dto.category !== undefined ? { category: dto.category.trim() } : {}),
         ...(dto.description !== undefined ? { description: dto.description.trim() } : {}),
         ...(dto.transactionDate ? { transactionDate: this.toDate(dto.transactionDate) } : {}),
       },

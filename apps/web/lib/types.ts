@@ -10,7 +10,6 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   amount: string | number;
-  category: string;
   description: string;
   transactionDate: string;
   createdAt: string;
@@ -26,21 +25,9 @@ export interface Summary {
 export interface TransactionInput {
   type: TransactionType;
   amount: number;
-  category: string;
   description: string;
   transactionDate: string;
 }
-
-export const incomeCategories = ['Gaji', 'Freelance', 'Bonus', 'Lainnya'];
-export const expenseCategories = [
-  'Makanan',
-  'Transportasi',
-  'Belanja',
-  'Tagihan',
-  'Hiburan',
-  'Kesehatan',
-  'Lainnya',
-];
 
 export const formatRupiah = (value: string | number) =>
   new Intl.NumberFormat('id-ID', {
@@ -48,6 +35,16 @@ export const formatRupiah = (value: string | number) =>
     currency: 'IDR',
     maximumFractionDigits: 0,
   }).format(Number(value));
+
+export const parseRupiahInput = (value: FormDataEntryValue | null) => {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits ? Number(digits) : Number.NaN;
+};
+
+export const formatRupiahInput = (value: string | number) => {
+  const digits = String(value).replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
 
 export const formatDate = (value: string) =>
   new Intl.DateTimeFormat('id-ID', {

@@ -14,11 +14,6 @@ export class UpdateTransactionDto {
   amount?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  category?: string;
-
-  @IsOptional()
   @IsDateString()
   transactionDate?: string;
 

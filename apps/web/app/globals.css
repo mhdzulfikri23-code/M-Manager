@@ -484,6 +484,13 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .history-table-wrap {
+    max-height: 24rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
   .history-table th,
   .history-table td {
     padding: var(--space-sm);
@@ -493,6 +500,10 @@
   }
 
   .history-table th {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    background: var(--color-paper);
     font-size: var(--text-sm);
     text-transform: uppercase;
   }
@@ -518,6 +529,49 @@
   }
 
   .row-actions button { min-height: 3rem; }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding-block: var(--space-md);
+    border-bottom: var(--rule-strong);
+  }
+
+  .pagination > p {
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+    font-weight: 700;
+  }
+
+  .pagination__controls,
+  .pagination__page {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .pagination button {
+    min-height: 2.75rem;
+    padding: var(--space-xs) var(--space-sm);
+    border: var(--rule-thin);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+
+  .pagination button[aria-current="page"] {
+    background: var(--color-accent-2);
+    color: var(--color-paper);
+  }
+
+  .pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .pagination__ellipsis { color: var(--color-ink-2); }
 
   .auth-layout {
     display: grid;
@@ -867,6 +921,10 @@
   }
   .history-table .row-actions::before { content: none; }
   .row-actions button { flex: 1; }
+  .pagination { align-items: stretch; flex-direction: column; }
+  .pagination__controls { flex-wrap: wrap; }
+  .pagination__controls > button:first-child,
+  .pagination__controls > button:last-child { flex: 1; }
   .form-actions .button { width: 100%; }
   .undo-toast { align-items: stretch; flex-direction: column; }
 }

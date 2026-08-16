@@ -1,10 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ApiError, apiFetch } from '@/lib/api';
 import {
-  expenseCategories,
-  incomeCategories,
+  formatRupiahInput,
+  parseRupiahInput,
   todayInputValue,
   type Transaction,
   type TransactionInput,
@@ -23,10 +23,6 @@ export function TransactionForm({ open, transaction, onClose, onSaved }: Transac
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'EXPENSE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const categories = useMemo(
-    () => (type === 'INCOME' ? incomeCategories : expenseCategories),
-    [type],
-  );
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -45,13 +41,12 @@ export function TransactionForm({ open, transaction, onClose, onSaved }: Transac
     const formData = new FormData(event.currentTarget);
     const payload: TransactionInput = {
       type,
-      amount: Number(formData.get('amount')),
-      category: String(formData.get('category')),
+      amount: parseRupiahInput(formData.get('amount')),
       transactionDate: String(formData.get('transactionDate')),
       description: String(formData.get('description')),
     };
 
-    if (payload.amount <= 0) {
+    if (!Number.isFinite(payload.amount) || payload.amount <= 0) {
       setError('Nominal harus lebih besar dari 0. Masukkan jumlah yang benar.');
       return;
     }
@@ -122,28 +117,17 @@ export function TransactionForm({ open, transaction, onClose, onSaved }: Transac
           <input
             key={`amount-${transaction?.id ?? 'new'}`}
             name="amount"
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="1"
-            step="1"
-            defaultValue={transaction ? Number(transaction.amount) : ''}
-            placeholder="50000"
+            pattern="[0-9., ]+"
+            defaultValue={transaction ? formatRupiahInput(Math.round(Number(transaction.amount))) : ''}
+            placeholder="50.000"
+            onInput={(event) => {
+              event.currentTarget.value = formatRupiahInput(event.currentTarget.value);
+            }}
             required
           />
-          <small>Masukkan angka tanpa titik atau simbol Rp.</small>
-        </label>
-
-        <label className="field">
-          <span>Kategori</span>
-          <select
-            key={`category-${transaction?.id ?? 'new'}-${type}`}
-            name="category"
-            defaultValue={transaction?.type === type ? transaction.category : categories[0]}
-            required
-          >
-            {categories.map((category) => <option key={category}>{category}</option>)}
-          </select>
-          <small>Pilih kategori yang paling dekat.</small>
+          <small>Boleh pakai titik atau koma, misalnya 50.000.</small>
         </label>
 
         <label className="field">

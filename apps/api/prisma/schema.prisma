@@ -27,7 +27,6 @@ model Transaction {
   userId          String          @db.Uuid
   type            TransactionType
   amount          Decimal         @db.Decimal(19, 2)
-  category        String
   description     String
   transactionDate DateTime        @db.Date
   createdAt       DateTime        @default(now())

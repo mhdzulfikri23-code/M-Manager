@@ -11,10 +11,6 @@ export class CreateTransactionDto {
   @Min(0.01)
   amount: number;
 
-  @IsString()
-  @MaxLength(50)
-  category: string;
-
   @IsDateString()
   transactionDate: string;
 

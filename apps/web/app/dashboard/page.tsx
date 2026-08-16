@@ -8,6 +8,8 @@ import { ApiError, apiFetch } from '@/lib/api';
 import { formatDate, formatRupiah, todayInputValue, type Summary, type Transaction } from '@/lib/types';
 import { useAuthGuard } from '@/lib/use-auth-guard';
 
+const RECENT_TRANSACTION_LIMIT = 5;
+
 function useAnimatedNumber(value: number) {
   const [displayValue, setDisplayValue] = useState(value);
 
@@ -47,7 +49,7 @@ export default function DashboardPage() {
     try {
       const [summaryData, transactionData] = await Promise.all([
         apiFetch<Summary>(`/transactions/summary?month=${todayInputValue().slice(0, 7)}`),
-        apiFetch<Transaction[]>('/transactions?limit=5'),
+        apiFetch<Transaction[]>(`/transactions?limit=${RECENT_TRANSACTION_LIMIT}`),
       ]);
       setSummary(summaryData);
       setTransactions(transactionData);
@@ -119,7 +121,7 @@ export default function DashboardPage() {
                   <article className="transaction-row" role="listitem" key={transaction.id}>
                     <div>
                       <strong>{transaction.description}</strong>
-                      <span>{transaction.category} · {formatDate(transaction.transactionDate)}</span>
+                      <span>{formatDate(transaction.transactionDate)}</span>
                     </div>
                     <p className={transaction.type === 'INCOME' ? 'amount amount--income' : 'amount amount--expense'}>
                       <span aria-hidden="true">{transaction.type === 'INCOME' ? '+' : '−'}</span>
