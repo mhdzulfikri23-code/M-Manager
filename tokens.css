@@ -1,0 +1,72 @@
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 */
+:root {
+  --color-paper: oklch(92% 0.045 50);
+  --color-paper-2: oklch(88% 0.05 45);
+  --color-paper-3: oklch(82% 0.06 40);
+  --color-ink: oklch(18% 0.08 20);
+  --color-ink-2: oklch(28% 0.06 25);
+  --color-muted: oklch(45% 0.05 30);
+  --color-rule: oklch(40% 0.18 25);
+  --color-accent: oklch(86% 0.18 95);
+  --color-accent-2: oklch(40% 0.21 25);
+  --color-accent-ink: oklch(18% 0.08 20);
+  --color-focus: oklch(40% 0.21 25);
+  --color-focus-dark: var(--color-accent);
+  --color-income: oklch(36% 0.13 150);
+  --color-expense: oklch(40% 0.21 25);
+  --color-success: oklch(36% 0.13 150);
+  --color-error: oklch(40% 0.21 25);
+  --color-overlay: oklch(18% 0.08 20 / 0.72);
+  --color-transparent: oklch(18% 0.08 20 / 0);
+
+  --font-display: "Big Shoulders Display Variable", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem;
+  --text-4xl: 3.815rem;
+  --text-display: clamp(3.5rem, 12vw, 7rem);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rule-thin: 1px solid var(--color-ink);
+  --rule-field: 1px solid var(--color-ink);
+  --rule-strong: 2px solid var(--color-ink);
+  --rule-accent: 2px solid var(--color-rule);
+  --rule-shadow: 4px 4px 0 var(--color-ink);
+  --rule-shadow-accent: 4px 4px 0 var(--color-accent);
+
+  --radius-none: 0;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}

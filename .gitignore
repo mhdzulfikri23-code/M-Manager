@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+coverage
+.env
+apps/web/.env.local
+*.log
+.DS_Store
+.local-postgres/
+apps/api/prisma/migrations/**/migration_lock.toml

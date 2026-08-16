@@ -1,0 +1,18 @@
+{
+  "name": "personal-money-manager",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace @money-manager/api",
+    "dev:web": "npm run dev --workspace @money-manager/web",
+    "build": "npm run build --workspace @money-manager/api && npm run build --workspace @money-manager/web",
+    "prisma:generate": "npm run prisma:generate --workspace @money-manager/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace @money-manager/api --"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
