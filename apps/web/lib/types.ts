@@ -3,7 +3,57 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 export interface User {
   id: string;
   name: string;
+  username: string;
   email: string;
+  role: 'USER' | 'SUPER_ADMIN';
+}
+
+export interface SavingsGroupSummary {
+  id: string;
+  name: string;
+  goal: number | null;
+  createdAt: string;
+  memberCount: number;
+  depositCount: number;
+  totalDeposited: number;
+  myDeposited: number;
+}
+
+export interface PartnerCandidate {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+export interface SavingsMember {
+  id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  total: number;
+  joinedAt: string;
+}
+
+export interface SavingsDeposit {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  amount: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface SavingsGroupDetail {
+  id: string;
+  name: string;
+  goal: number | null;
+  createdById: string;
+  createdAt: string;
+  totalDeposited: number;
+  members: SavingsMember[];
+  deposits: SavingsDeposit[];
 }
 
 export interface Transaction {

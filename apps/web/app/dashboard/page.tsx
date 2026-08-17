@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { TransactionForm } from '@/components/transaction-form';
@@ -35,6 +36,7 @@ function useAnimatedNumber(value: number) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, checking } = useAuthGuard();
   const [summary, setSummary] = useState<Summary>({ balance: 0, monthlyIncome: 0, monthlyExpense: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -61,10 +63,16 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!checking && user) void loadData();
-  }, [checking, loadData, user]);
+    if (!checking && user) {
+      if (user.role === 'SUPER_ADMIN') {
+        router.replace('/admin');
+        return;
+      }
+      void loadData();
+    }
+  }, [checking, loadData, router, user]);
 
-  if (checking) return <div className="loading-screen" role="status">Membuka catatan…</div>;
+  if (checking || user?.role === 'SUPER_ADMIN') return <div className="loading-screen" role="status">Membuka catatan…</div>;
 
   return (
     <AppShell user={user}>

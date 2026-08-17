@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { TransactionForm } from '@/components/transaction-form';
 import { ApiError, apiFetch } from '@/lib/api';
 import {
   formatDate,
   formatRupiah,
+  type SavingsGroupDetail,
+  type SavingsGroupSummary,
   type Transaction,
   type TransactionInput,
   type TransactionType,
@@ -14,6 +17,7 @@ import {
 import { useAuthGuard } from '@/lib/use-auth-guard';
 
 type Filter = 'ALL' | TransactionType;
+type HistoryView = 'PERSONAL' | 'SAVINGS';
 const TRANSACTIONS_PER_PAGE = 5;
 
 function paginationPages(currentPage: number, totalPages: number) {
@@ -22,8 +26,15 @@ function paginationPages(currentPage: number, totalPages: number) {
 }
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const { user, checking } = useAuthGuard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [historyView, setHistoryView] = useState<HistoryView>('PERSONAL');
+  const [savingsGroups, setSavingsGroups] = useState<SavingsGroupSummary[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [savingsDetail, setSavingsDetail] = useState<SavingsGroupDetail | null>(null);
+  const [savingsLoading, setSavingsLoading] = useState(true);
+  const [savingsError, setSavingsError] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [month, setMonth] = useState('');
   const [page, setPage] = useState(1);
@@ -57,9 +68,42 @@ export default function TransactionsPage() {
     }
   }, [filter, month]);
 
+  const loadSavings = useCallback(async () => {
+    setSavingsLoading(true);
+    setSavingsError('');
+    try {
+      const data = await apiFetch<SavingsGroupSummary[]>('/groups');
+      setSavingsGroups(data);
+      setSelectedGroupId((current) => data.some((group) => group.id === current) ? current : data[0]?.id ?? '');
+    } catch (caught) {
+      setSavingsError(caught instanceof ApiError ? caught.message : 'Riwayat tabungan belum bisa dimuat.');
+    } finally {
+      setSavingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!checking && user) void loadTransactions();
-  }, [checking, loadTransactions, user]);
+    if (!checking && user) {
+      if (user.role === 'SUPER_ADMIN') {
+        router.replace('/admin');
+        return;
+      }
+      void loadTransactions();
+      void loadSavings();
+    }
+  }, [checking, loadSavings, loadTransactions, router, user]);
+
+  useEffect(() => {
+    if (!selectedGroupId) {
+      setSavingsDetail(null);
+      return;
+    }
+    setSavingsLoading(true);
+    apiFetch<SavingsGroupDetail>(`/groups/${selectedGroupId}`)
+      .then(setSavingsDetail)
+      .catch((caught) => setSavingsError(caught instanceof ApiError ? caught.message : 'Detail tabungan belum bisa dimuat.'))
+      .finally(() => setSavingsLoading(false));
+  }, [selectedGroupId]);
 
   useEffect(() => () => {
     if (undoTimer.current) clearTimeout(undoTimer.current);
@@ -110,7 +154,7 @@ export default function TransactionsPage() {
     setFormOpen(true);
   }
 
-  if (checking) return <div className="loading-screen" role="status">Membuka riwayat…</div>;
+  if (checking || user?.role === 'SUPER_ADMIN') return <div className="loading-screen" role="status">Membuka riwayat…</div>;
 
   return (
     <AppShell user={user}>
@@ -123,7 +167,16 @@ export default function TransactionsPage() {
           <button className="button button--primary" type="button" onClick={openCreate}>+ Catat transaksi</button>
         </header>
 
-        <section className="filters" aria-label="Filter transaksi">
+        <div className="filter-tabs history-view-tabs" role="group" aria-label="Jenis riwayat">
+          <button type="button" aria-pressed={historyView === 'PERSONAL'} onClick={() => setHistoryView('PERSONAL')}>
+            Transaksi pribadi
+          </button>
+          <button type="button" aria-pressed={historyView === 'SAVINGS'} onClick={() => setHistoryView('SAVINGS')}>
+            Riwayat tabungan bersama
+          </button>
+        </div>
+
+        {historyView === 'PERSONAL' ? <><section className="filters" aria-label="Filter transaksi">
           <div className="filter-tabs" role="group" aria-label="Jenis transaksi">
             {([
               ['ALL', 'Semua'],
@@ -234,7 +287,83 @@ export default function TransactionsPage() {
             </nav>
             </>
           )}
-        </section>
+        </section></> : (
+          <section className="savings-history" aria-live="polite">
+            {savingsError && <p className="page-error" role="alert">◆ {savingsError}</p>}
+            {savingsGroups.length > 0 && (
+              <label className="field savings-history__select">
+                <span>Pilih tabungan bersama</span>
+                <select value={selectedGroupId} onChange={(event) => setSelectedGroupId(event.target.value)}>
+                  {savingsGroups.map((group) => (
+                    <option key={group.id} value={group.id}>{group.name} — {formatRupiah(group.totalDeposited)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {savingsLoading ? (
+              <div className="transaction-sheet" aria-busy="true">
+                {Array.from({ length: 3 }).map((_, index) => <div className="skeleton-row" key={index} />)}
+              </div>
+            ) : savingsGroups.length === 0 ? (
+              <div className="empty-state">
+                <span aria-hidden="true">❋</span>
+                <p>Belum ada tabungan bersama. Buat dari tombol Catat transaksi lalu pilih Tabungan bersama.</p>
+                <button className="button button--secondary" type="button" onClick={openCreate}>Catat tabungan</button>
+              </div>
+            ) : savingsDetail && (
+              <div className="savings-history__content">
+                <header className="savings-total">
+                  <div>
+                    <p className="page-kicker">Terkumpul bersama</p>
+                    <h2>{savingsDetail.name}</h2>
+                  </div>
+                  <strong>{formatRupiah(savingsDetail.totalDeposited)}</strong>
+                  {savingsDetail.goal && (
+                    <div className="goal-progress">
+                      <div>
+                        <span>Target {formatRupiah(savingsDetail.goal)}</span>
+                        <b>{Math.min(100, Math.round(savingsDetail.totalDeposited / savingsDetail.goal * 100))}%</b>
+                      </div>
+                      <progress max="100" value={Math.min(100, savingsDetail.totalDeposited / savingsDetail.goal * 100)} />
+                    </div>
+                  )}
+                </header>
+
+                <section className="member-section">
+                  <div className="section-head"><h3>KONTRIBUSI ANGGOTA.</h3></div>
+                  <div className="member-grid">
+                    {savingsDetail.members.map((member) => (
+                      <article className="member-card" key={member.userId}>
+                        <span>{member.userId === savingsDetail.createdById ? 'Pemilik' : 'Partner'}</span>
+                        <strong>{member.name}</strong>
+                        <small>{member.email}</small>
+                        <b>{formatRupiah(member.total)}</b>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="deposit-section">
+                  <div className="section-head"><h3>RIWAYAT SETORAN.</h3></div>
+                  {savingsDetail.deposits.length === 0 ? <p className="muted-copy">Belum ada setoran.</p> : (
+                    <div className="transaction-sheet">
+                      {savingsDetail.deposits.map((deposit) => (
+                        <article className="transaction-row" key={deposit.id}>
+                          <div>
+                            <strong>{deposit.name}</strong>
+                            <span>{deposit.note || 'Setoran tabungan'} · {formatDate(deposit.createdAt)}</span>
+                          </div>
+                          <p className="amount amount--income">+{formatRupiah(deposit.amount)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       {undoItem && (
@@ -248,7 +377,10 @@ export default function TransactionsPage() {
         open={formOpen}
         transaction={editing}
         onClose={() => { setFormOpen(false); setEditing(null); }}
-        onSaved={loadTransactions}
+        onSaved={() => {
+          void loadTransactions();
+          void loadSavings();
+        }}
       />
     </AppShell>
   );

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
-import { ApiError, apiFetch, setToken } from '@/lib/api';
+import { FormEvent, useEffect, useState } from 'react';
+import { ApiError, apiFetch, clearToken, getToken, setToken } from '@/lib/api';
 import type { User } from '@/lib/types';
 
 interface AuthResponse {
@@ -15,7 +15,15 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const isRegister = mode === 'register';
+
+  useEffect(() => {
+    if (!getToken()) return;
+    apiFetch<User>('/auth/me')
+      .then((currentUser) => router.replace(currentUser.role === 'SUPER_ADMIN' ? '/admin' : '/dashboard'))
+      .catch(() => clearToken());
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,13 +35,13 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       const response = await apiFetch<AuthResponse>(`/auth/${isRegister ? 'register' : 'login'}`, {
         method: 'POST',
         body: JSON.stringify({
-          ...(isRegister ? { name: formData.get('name') } : {}),
+          ...(isRegister ? { username: formData.get('username') } : {}),
           email: formData.get('email'),
           password: formData.get('password'),
         }),
       });
       setToken(response.accessToken);
-      router.replace('/dashboard');
+      router.replace(response.user.role === 'SUPER_ADMIN' ? '/admin' : '/dashboard');
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Akun belum bisa diproses. Coba lagi.');
     } finally {
@@ -55,25 +63,38 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           <h2>{isRegister ? 'Buat akun pribadi' : 'Masuk ke catatanmu'}</h2>
           {isRegister && (
             <label className="field">
-              <span>Nama</span>
-              <input name="name" type="text" minLength={2} autoComplete="name" required />
-              <small>Nama yang tampil di dashboard.</small>
+              <span>Username / nama akun</span>
+              <input name="username" type="text" minLength={3} maxLength={30} pattern="[A-Za-z0-9._-]+" autoComplete="username" required />
+              <small>Dipakai sebagai nama tampilan dan untuk login. Huruf besar dan kecil berpengaruh.</small>
             </label>
           )}
           <label className="field">
-            <span>Alamat email</span>
-            <input name="email" type="email" autoComplete="email" required />
-            <small>Contoh: kamu@email.com</small>
+            <span>{isRegister ? 'Alamat email' : 'Username atau email'}</span>
+            <input name="email" type={isRegister ? 'email' : 'text'} autoComplete={isRegister ? 'email' : 'username'} required />
+            <small>{isRegister ? 'Contoh: kamu@email.com' : 'Username case-sensitive; email tidak membedakan huruf besar/kecil.'}</small>
           </label>
           <label className="field">
             <span>Kata sandi</span>
-            <input
-              name="password"
-              type="password"
-              minLength={8}
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              required
-            />
+            <span className="password-input">
+              <input
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                minLength={8}
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                aria-pressed={showPassword}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle cx="12" cy="12" r="2.75" />
+                </svg>
+              </button>
+            </span>
             <small>Minimal 8 karakter.</small>
           </label>
           {error && <p className="form-error" role="alert">◆ {error}</p>}

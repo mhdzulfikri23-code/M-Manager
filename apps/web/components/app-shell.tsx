@@ -19,17 +19,25 @@ export function AppShell({ children, user }: { children: ReactNode; user: User |
     <div className="app-frame">
       <header className="site-header">
         <div className="site-header__top">
-          <Link className="wordmark" href="/dashboard">UANG HARI INI</Link>
-          <span className="user-note">{user ? `Milik ${user.name}` : 'Catatan pribadi'}</span>
+          <Link className="wordmark" href={user?.role === 'SUPER_ADMIN' ? '/admin' : '/dashboard'}>UANG HARI INI</Link>
+          <span className="user-note">{user ? `Akun ${user.name}` : 'Akun pengguna'}</span>
         </div>
         <nav className="main-nav" aria-label="Navigasi utama">
           <div className="main-nav__links">
-            <Link aria-current={pathname === '/dashboard' ? 'page' : undefined} href="/dashboard">
-              Dashboard
-            </Link>
-            <Link aria-current={pathname === '/transactions' ? 'page' : undefined} href="/transactions">
-              Transaksi
-            </Link>
+            {user?.role === 'SUPER_ADMIN' ? (
+              <Link aria-current={pathname === '/admin' ? 'page' : undefined} href="/admin">
+                Admin
+              </Link>
+            ) : (
+              <>
+                <Link aria-current={pathname === '/dashboard' ? 'page' : undefined} href="/dashboard">
+                  Dashboard
+                </Link>
+                <Link aria-current={pathname === '/transactions' ? 'page' : undefined} href="/transactions">
+                  Transaksi
+                </Link>
+              </>
+            )}
           </div>
           <button className="text-button" type="button" onClick={logout}>Keluar</button>
         </nav>

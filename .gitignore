@@ -5,6 +5,7 @@ coverage
 .env
 apps/web/.env.local
 *.log
+*.tsbuildinfo
 .DS_Store
 .local-postgres/
 apps/api/prisma/migrations/**/migration_lock.toml
